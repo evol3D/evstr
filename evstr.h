@@ -1,6 +1,25 @@
 #ifndef EVSTR_HEADER
 #define EVSTR_HEADER
 
+#ifdef EVSTR_DLL
+    #if defined(_WINDOWS) || defined(_WIN32)
+        #if defined (EVSTR_IMPL)
+            #define EVSTR_API __declspec(dllexport)
+        #else
+            #define EVSTR_API __declspec(dllimport)
+        #endif
+    #elif defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+        #if defined (EVSTR_IMPL)
+            #define EVSTR_API __attribute__((visibility("default")))
+        #else
+            #define EVSTR_API
+        #endif
+    #endif
+#else
+    #define EVSTR_API
+#endif
+
+
 #ifndef EVSTRING_GROWTH_FACTOR
 #define EVSTRING_GROWTH_FACTOR 3 / 2
 #endif
@@ -12,62 +31,62 @@ typedef struct evstr_ref {
   const char *data;
 } evstr_ref;
 
-evstring 
+EVSTR_API evstring 
 evstring_new(
     const char *orig);
 
-evstring
+EVSTR_API evstring
 evstring_clone(
     evstring s);
 
-void
+EVSTR_API void
 evstring_free(
     evstring s);
 
-size_t
+EVSTR_API size_t
 evstring_len(
     evstring s);
 
-void
+EVSTR_API void
 evstring_setlen(
     evstring s,
     size_t newlen);
 
-int
+EVSTR_API int
 evstring_cmp(
     evstring s1,
     evstring s2);
 
-int
+EVSTR_API int
 evstring_pushchar(
     evstring *s,
     char c);
 
-int
+EVSTR_API int
 evstring_pushstr(
     evstring *s,
     const char *data);
 
-evstring
+EVSTR_API evstring
 evstring_refclone(
     evstr_ref ref);
 
-evstr_ref
+EVSTR_API evstr_ref
 evstring_ref(
     evstring s);
 
-evstr_ref
+EVSTR_API evstr_ref
 evstring_slice(
     evstring s,
     size_t begin,
     size_t end);
 
-int
+EVSTR_API int
 evstring_refpush(
     evstring *s,
     evstr_ref ref);
 
-#if defined(EVSTR_IMPL)
+#if defined(EVSTR_IMPLEMENTATION)
 
 #include <string.h>
 #include <assert.h>
