@@ -24,6 +24,8 @@
 #define EVSTRING_GROWTH_FACTOR 3 / 2
 #endif
 
+#include <stddef.h>
+
 typedef char *evstring;
 
 typedef struct evstr_ref {
