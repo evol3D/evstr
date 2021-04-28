@@ -50,9 +50,9 @@ EVSTR_API size_t
 evstring_len(
     evstring s);
 
-EVSTR_API void
+EVSTR_API int
 evstring_setlen(
-    evstring s,
+    evstring *s,
     size_t newlen);
 
 EVSTR_API int
@@ -158,12 +158,25 @@ evstring_len(
   return evstring_getmeta(s)->length;
 }
 
-void
+int
 evstring_setlen(
-    evstring s,
+    evstring *s,
     size_t newlen)
 {
-    evstring_getmeta(s)->length = 0;
+    struct evstring_meta *meta = evstring_getmeta(*s);
+    if(newlen == meta->length) {
+        return 0;
+    }
+
+    while(newlen > meta->size) {
+        if(evstring_grow(s)) {
+            return 1;
+        }
+        meta = evstring_getmeta(*s);
+    }
+    meta->length = newlen;
+
+    return 0;
 }
 
 void
