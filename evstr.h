@@ -76,11 +76,11 @@ evstring_refclone(
 
 EVSTR_API evstr_ref
 evstring_ref(
-    evstring s);
+    evstring *s);
 
 EVSTR_API evstr_ref
 evstring_slice(
-    evstring s,
+    evstring *s,
     size_t begin,
     size_t end);
 
@@ -274,19 +274,19 @@ evstring_refpush(
     evstring *s,
     evstr_ref ref)
 {
-    return evstring_push(s,ref.len,ref.data + ref.offset);
+    return evstring_push(s,ref.len,(*ref.data) + ref.offset);
 }
 
 evstring
 evstring_refclone(
     evstr_ref ref)
 {
-    return evstring_create_impl(ref.data + ref.offset, ref.len);
+    return evstring_create_impl((*ref.data) + ref.offset, ref.len);
 }
 
 evstr_ref
 evstring_ref(
-    evstring s)
+    evstring *s)
 {
     return (evstr_ref) {
         .data = s, 
@@ -296,7 +296,7 @@ evstring_ref(
 
 evstr_ref
 evstring_slice(
-    evstring s,
+    evstring *s,
     size_t begin,
     size_t end)
 {
