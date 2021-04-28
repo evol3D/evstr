@@ -29,8 +29,9 @@
 typedef char *evstring;
 
 typedef struct evstr_ref {
+  evstring *data;
+  size_t offset;
   size_t len;
-  const char *data;
 } evstr_ref;
 
 EVSTR_API evstring 
@@ -273,21 +274,24 @@ evstring_refpush(
     evstring *s,
     evstr_ref ref)
 {
-    return evstring_push(s,ref.len,ref.data);
+    return evstring_push(s,ref.len,ref.data + ref.offset);
 }
 
 evstring
 evstring_refclone(
     evstr_ref ref)
 {
-    return evstring_create_impl(ref.data, ref.len);
+    return evstring_create_impl(ref.data + ref.offset, ref.len);
 }
 
 evstr_ref
 evstring_ref(
     evstring s)
 {
-    return (evstr_ref) {.data = s, .len = evstring_len(s)};
+    return (evstr_ref) {
+        .data = s, 
+        .offset = 0, 
+        .len = evstring_len(s)};
 }
 
 evstr_ref
@@ -296,7 +300,11 @@ evstring_slice(
     size_t begin,
     size_t end)
 {
-    return (evstr_ref) {.data = s + begin, .len = end - begin};
+    return (evstr_ref) {
+        .data = s,
+        .offset = begin, 
+        .len = end - begin
+    };
 }
 
 #endif
