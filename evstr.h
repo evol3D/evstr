@@ -89,6 +89,15 @@ evstring_refpush(
     evstring *s,
     evstr_ref ref);
 
+EVSTR_API size_t
+evstring_getspace(
+    evstring s);
+
+EVSTR_API int
+evstring_addspace(
+    evstring *s,
+    size_t space);
+
 #if defined(EVSTR_IMPLEMENTATION)
 
 #include <string.h>
@@ -304,7 +313,7 @@ evstring_ref(
     return (evstr_ref) {
         .data = s, 
         .offset = 0, 
-        .len = evstring_len(s)};
+        .len = evstring_len(*s)};
 }
 
 evstr_ref
@@ -318,6 +327,22 @@ evstring_slice(
         .offset = begin, 
         .len = end - begin
     };
+}
+
+size_t
+evstring_getspace(
+    evstring s)
+{
+    struct evstring_meta *meta = evstring_getmeta(*s);
+    return meta->size - meta->length;
+}
+
+EVSTR_API int
+evstring_addspace(
+    evstring *s,
+    size_t space)
+{
+    return evstring_setsize(s, evstring_getmeta(*s)->size + space);
 }
 
 #endif
