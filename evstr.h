@@ -98,6 +98,10 @@ evstring_addspace(
     evstring *s,
     size_t space);
 
+EVSTR_API void
+evstring_clear(
+    evstring *s);
+
 #if defined(EVSTR_IMPLEMENTATION)
 
 #include <string.h>
