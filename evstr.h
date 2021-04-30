@@ -102,6 +102,16 @@ EVSTR_API void
 evstring_clear(
     evstring *s);
 
+evstring
+evstring_newfmt(
+    const char *fmt,
+    ...);
+
+evstring
+evstring_newvfmt(
+    const char *fmt,
+    va_list args);
+
 #if defined(EVSTR_IMPLEMENTATION)
 
 #include <string.h>
@@ -135,12 +145,46 @@ evstring_create_impl(
     meta->size = size;
 
     evstring s = (evstring)(meta + 1);
-    memcpy(s, data, len);
+    if(len > 0) {
+        memcpy(s, data, len);
+    }
     s[len] = '\0';
 
     return s;
 }
-     
+
+#include <stdarg.h>
+
+evstring
+evstring_newvfmt(
+    const char *fmt,
+    va_list args)
+{
+    va_list test;
+    va_copy(test, args);
+    int len = vsnprintf(NULL, 0, fmt, test) + 1;
+    evstring res = evstring_create_impl(NULL, 0);
+    evstring_addspace(&res, len);
+    vsnprintf(res, len, fmt, args);
+    evstring_setlen(&res, len);
+
+    va_end(test);
+
+    return res;
+}
+
+evstring
+evstring_newfmt(
+    const char *fmt,
+    ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+
+    evstring_newvfmt(fmt, ap);
+
+    va_end(ap);
+}
 
 evstring
 evstring_new(
@@ -172,6 +216,40 @@ evstring_len(
 }
 
 int
+evstring_setsize(
+    evstring *s, 
+    size_t newsize)
+{
+    struct evstring_meta *meta = evstring_getmeta(*s);
+    if(meta->size == newsize) {
+        return 0;
+    }
+
+    void *buf = (void*)meta;
+    void *tmp = realloc(buf, sizeof(struct evstring_meta) + newsize);
+
+    if (!tmp) {
+        return 1;
+    }
+
+    if(buf != tmp) { // Reallocation caused memory to be moved
+        buf = tmp;
+        meta = (struct evstring_meta *)buf;
+        *s = (char*)buf + sizeof(struct evstring_meta);
+    }
+
+    meta->size = newsize;
+    return 0;
+}
+
+int
+evstring_grow(
+    evstring *s)
+{
+    return evstring_setsize(s, evstring_getmeta(*s)->size * EVSTRING_GROWTH_FACTOR);
+}
+
+int
 evstring_setlen(
     evstring *s,
     size_t newlen)
@@ -196,41 +274,7 @@ void
 evstring_clear(
     evstring *s)
 {
-    evstring_setlen(*s, 0);
-}
-
-int
-evstring_setsize(
-    evstring *s, 
-    size_t newsize)
-{
-    struct evstring_meta *meta = evstring_getmeta(*s);
-    if(meta->size == newsize) {
-        return 0;
-    }
-
-    void *buf = (void*)meta;
-    void *tmp = realloc(buf, sizeof(struct evstring_meta) + newsize);
-
-    if (!tmp) {
-        return 1;
-    }
-
-    if(buf != tmp) { // Reallocation caused memory to be moved
-        buf = tmp;
-        meta = (struct evstring_meta *)buf;
-        *s = buf + sizeof(struct evstring_meta);
-    }
-
-    meta->size = newsize;
-    return 0;
-}
-
-int
-evstring_grow(
-    evstring *s)
-{
-    return evstring_setsize(s, evstring_getmeta(*s)->size * EVSTRING_GROWTH_FACTOR);
+    evstring_setlen(s, 0);
 }
 
 int
@@ -245,6 +289,7 @@ evstring_cmp(
     }
     return memcmp(s1, s2, len1);
 }
+
 
 int
 evstring_push(
@@ -337,7 +382,7 @@ size_t
 evstring_getspace(
     evstring s)
 {
-    struct evstring_meta *meta = evstring_getmeta(*s);
+    struct evstring_meta *meta = evstring_getmeta(s);
     return meta->size - meta->length;
 }
 
