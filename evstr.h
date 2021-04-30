@@ -25,6 +25,7 @@
 #endif
 
 #include <stddef.h>
+#include <stdarg.h>
 
 typedef char *evstring;
 
@@ -152,8 +153,6 @@ evstring_create_impl(
 
     return s;
 }
-
-#include <stdarg.h>
 
 evstring
 evstring_newvfmt(
