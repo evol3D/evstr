@@ -71,6 +71,18 @@ evstring_pushstr(
     evstring *s,
     const char *data);
 
+EVSTR_API int
+evstring_pushfmt(
+    evstring *s,
+    const char *fmt,
+    ...);
+
+EVSTR_API int
+evstring_pushvfmt(
+    evstring *s,
+    const char *fmt,
+    va_list args);
+
 EVSTR_API evstring
 evstring_refclone(
     evstr_ref ref);
@@ -465,6 +477,33 @@ evstring_replacefirst(
             evstring_slice(text, query_slice.offset + query_slice.len, evstring_len(text)));
     }
     return result;
+}
+
+EVSTR_API int
+evstring_pushfmt(
+    evstring *s,
+    const char *fmt,
+    ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    evstring_pushvfmt(s, fmt, ap);
+    va_end(ap);
+}
+
+EVSTR_API int
+evstring_pushvfmt(
+    evstring *s,
+    const char *fmt,
+    va_list args)
+{
+    va_list test;
+    va_copy(test, args);
+    int fmt_len = vsnprintf(NULL, 0, fmt, test);
+    size_t old_len = evstring_len(*s);
+    evstring_setlen(s, old_len + fmt_len);
+    vsnprintf((*s) + old_len, fmt_len, fmt, args);
+    va_end(test);
 }
 
 #endif
