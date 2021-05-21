@@ -30,7 +30,7 @@
 typedef char *evstring;
 
 typedef struct evstr_ref {
-  evstring *data;
+  evstring data;
   size_t offset;
   size_t len;
 } evstr_ref;
@@ -77,11 +77,11 @@ evstring_refclone(
 
 EVSTR_API evstr_ref
 evstring_ref(
-    evstring *s);
+    evstring s);
 
 EVSTR_API evstr_ref
 evstring_slice(
-    evstring *s,
+    evstring s,
     size_t begin,
     size_t end);
 
@@ -115,7 +115,7 @@ evstring_newvfmt(
 
 EVSTR_API evstr_ref
 evstring_findfirst(
-    evstring *text,
+    evstring text,
     const char *query);
 
 #if defined(EVSTR_IMPLEMENTATION)
@@ -351,29 +351,29 @@ evstring_refpush(
     evstring *s,
     evstr_ref ref)
 {
-    return evstring_push(s,ref.len,(*ref.data) + ref.offset);
+    return evstring_push(s,ref.len,ref.data + ref.offset);
 }
 
 evstring
 evstring_refclone(
     evstr_ref ref)
 {
-    return evstring_create_impl((*ref.data) + ref.offset, ref.len);
+    return evstring_create_impl(ref.data + ref.offset, ref.len);
 }
 
 evstr_ref
 evstring_ref(
-    evstring *s)
+    evstring s)
 {
     return (evstr_ref) {
         .data = s, 
         .offset = 0, 
-        .len = evstring_len(*s)};
+        .len = evstring_len(s)};
 }
 
 evstr_ref
 evstring_slice(
-    evstring *s,
+    evstring s,
     size_t begin,
     size_t end)
 {
@@ -402,11 +402,11 @@ evstring_addspace(
 
 EVSTR_API evstr_ref
 evstring_findfirst(
-    evstring *text,
+    evstring text,
     const char *query)
 {
     size_t query_len = strlen(query);
-    size_t text_len = evstring_len(*text);
+    size_t text_len = evstring_len(text);
     size_t found_progress = 0;
 
     evstr_ref result = {
@@ -416,7 +416,7 @@ evstring_findfirst(
     };
 
     for(size_t i = 0; i < text_len; i++) {
-        if((*text)[i] == query[found_progress]) {
+        if(text[i] == query[found_progress]) {
             found_progress++;
         }
         if(found_progress == query_len) {
