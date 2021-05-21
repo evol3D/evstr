@@ -113,6 +113,11 @@ evstring_newvfmt(
     const char *fmt,
     va_list args);
 
+EVSTR_API evstr_ref
+evstring_findfirst(
+    evstring *text,
+    const char *query);
+
 #if defined(EVSTR_IMPLEMENTATION)
 
 #include <string.h>
@@ -393,6 +398,34 @@ evstring_addspace(
     size_t space)
 {
     return evstring_setsize(s, evstring_getmeta(*s)->size + space);
+}
+
+EVSTR_API evstr_ref
+evstring_findfirst(
+    evstring *text,
+    const char *query)
+{
+    size_t query_len = strlen(query);
+    size_t text_len = evstring_len(*text);
+    size_t found_progress = 0;
+
+    evstr_ref result = {
+        .data = text,
+        .len = 0,
+        .offset = ~0ull
+    };
+
+    for(size_t i = 0; i < text_len; i++) {
+        if((*text)[i] == query[found_progress]) {
+            found_progress++;
+        }
+        if(found_progress == query_len) {
+            result.offset = (i+1) - query_len;
+            result.len = query_len;
+            break;
+        }
+    }
+    return result;
 }
 
 #endif
