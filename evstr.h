@@ -180,9 +180,11 @@ evstring_newfmt(
     va_list ap;
     va_start(ap, fmt);
 
-    evstring_newvfmt(fmt, ap);
+    evstring res = evstring_newvfmt(fmt, ap);
 
     va_end(ap);
+
+    return res;
 }
 
 evstring
