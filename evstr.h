@@ -172,10 +172,10 @@ evstring_newvfmt(
 {
     va_list test;
     va_copy(test, args);
-    int len = vsnprintf(NULL, 0, fmt, test) + 1;
+    int len = vsnprintf(NULL, 0, fmt, test);
     evstring res = evstring_create_impl(NULL, 0);
-    evstring_addspace(&res, len);
-    vsnprintf(res, len, fmt, args);
+    evstring_addspace(&res, len + 1);
+    vsnprintf(res, len + 1, fmt, args);
     evstring_setlen(&res, len);
 
     va_end(test);
