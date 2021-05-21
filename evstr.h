@@ -118,6 +118,12 @@ evstring_findfirst(
     evstring text,
     const char *query);
 
+EVSTR_API evstring
+evstring_replacefirst(
+    evstring text,
+    const char *query,
+    const char *replacement);
+
 #if defined(EVSTR_IMPLEMENTATION)
 
 #include <string.h>
@@ -424,6 +430,39 @@ evstring_findfirst(
             result.len = query_len;
             break;
         }
+    }
+    return result;
+}
+
+EVSTR_API evstring
+evstring_replacefirst(
+    evstring text,
+    const char *query,
+    const char *replacement)
+{
+    evstring result = NULL;
+
+    evstr_ref query_slice = evstring_findfirst(text, query);
+
+    // If the query doesn't actually exist, then we're returning a clone of
+    // the original string.
+    if(query_slice.len == 0) {
+        result = evstring_clone(text);
+    } else {
+        result=evstring_create_impl(NULL,0);
+
+        // If the query doesn't match at the beginning of the string,
+        // then we need to copy the data before it first.
+        if(query_slice.offset != 0) {
+            evstring_refpush(&result, evstring_slice(text, 0, query_slice.offset));
+        }
+
+        // Then, we simply push the replacement
+        evstring_pushstr(&result, replacement);
+
+        // Followed by the rest of the string
+        evstring_refpush(&result,
+            evstring_slice(text, query_slice.offset + query_slice.len, evstring_len(text)));
     }
     return result;
 }
