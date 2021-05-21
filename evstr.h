@@ -103,12 +103,12 @@ EVSTR_API void
 evstring_clear(
     evstring *s);
 
-evstring
+EVSTR_API evstring
 evstring_newfmt(
     const char *fmt,
     ...);
 
-evstring
+EVSTR_API evstring
 evstring_newvfmt(
     const char *fmt,
     va_list args);
