@@ -136,6 +136,16 @@ evstring_replacefirst(
     const char *query,
     const char *replacement);
 
+EVSTR_API int
+evstring_findfirst_ch(
+    const evstring text,
+    const char c);
+
+EVSTR_API int
+evstring_findlast_ch(
+    const evstring text,
+    const char c);
+
 #if defined(EVSTR_IMPLEMENTATION)
 
 #include <string.h>
@@ -504,6 +514,35 @@ evstring_pushvfmt(
     evstring_setlen(s, old_len + fmt_len);
     vsnprintf((*s) + old_len, fmt_len, fmt, args);
     va_end(test);
+}
+
+EVSTR_API int
+evstring_findfirst_ch(
+    const evstring text,
+    const char c)
+{
+    struct evstring_meta *meta = evstring_getmeta(text);
+    for(int i = 0; i < meta->length; i++) {
+        if(text[i] == c) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+EVSTR_API int
+evstring_findlast_ch(
+    const evstring text,
+    const char c)
+{
+    struct evstring_meta *meta = evstring_getmeta(text);
+    int i;
+    for(i = meta->length - 1; i >= meta->length; i--) {
+        if(text[i] == c) {
+            break;
+        }
+    }
+    return i; 
 }
 
 #endif
