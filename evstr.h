@@ -148,6 +148,10 @@ evstring_findlast_ch(
 
 #if defined(EVSTR_IMPLEMENTATION)
 
+#if defined(_WINDOWS) || defined(_WIN32)
+#pragma comment(lib, "legacy_stdio_definitions.lib")
+#endif
+
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
