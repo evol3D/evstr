@@ -29,6 +29,30 @@
 
 typedef char *evstring;
 
+typedef enum {
+    EVSTR_ERR_NONE = 0,
+    EVSTR_ERR_OOM = -1,
+} evstring_error_t;
+
+struct evstring_meta {
+    size_t length;
+    size_t size;
+    enum {
+        EVSTR_ALLOCATION_TYPE_STACK,
+        EVSTR_ALLOCATION_TYPE_HEAP
+    } allocationType;
+};
+
+#define __ev_strlen_const sizeof
+#define evstring_literal(str) __evstring_literal_impl(str, __ev_strlen_const(str))
+#define __evstring_literal_impl(str, len) \
+    (( struct { struct evstring_meta meta; char data[len]; } ) { \
+        .meta.length = len-1, \
+        .meta.size = len, \
+        .meta.allocationType = EVSTR_ALLOCATION_TYPE_STACK, \
+        .data = str \
+    }).data
+
 typedef struct evstr_ref {
   evstring data;
   size_t offset;
@@ -51,7 +75,7 @@ EVSTR_API size_t
 evstring_len(
     evstring s);
 
-EVSTR_API int
+EVSTR_API evstring_error_t
 evstring_setlen(
     evstring *s,
     size_t newlen);
@@ -156,11 +180,6 @@ evstring_findlast_ch(
 #include <assert.h>
 #include <stdlib.h>
 
-struct evstring_meta {
-    size_t length;
-    size_t size;
-};
-
 struct evstring_meta *
 evstring_getmeta(
         evstring s)
@@ -181,6 +200,7 @@ evstring_create_impl(
     struct evstring_meta *meta = (struct evstring_meta *)p;
     meta->length = len;
     meta->size = size;
+    meta->allocationType = EVSTR_ALLOCATION_TYPE_HEAP;
 
     evstring s = (evstring)(meta + 1);
     if(len > 0) {
@@ -190,6 +210,8 @@ evstring_create_impl(
 
     return s;
 }
+
+#include <stdio.h>
 
 evstring
 evstring_newvfmt(
@@ -243,7 +265,9 @@ void
 evstring_free(
     evstring s)
 {
-    free(evstring_getmeta(s));
+    if(evstring_getmeta(s)->allocationType == EVSTR_ALLOCATION_TYPE_HEAP) {
+        free(evstring_getmeta(s));
+    }
 }
 
 size_t
@@ -253,21 +277,25 @@ evstring_len(
   return evstring_getmeta(s)->length;
 }
 
-int
+evstring_error_t
 evstring_setsize(
     evstring *s, 
     size_t newsize)
 {
     struct evstring_meta *meta = evstring_getmeta(*s);
+    if(meta->allocationType == EVSTR_ALLOCATION_TYPE_STACK) {
+        return EVSTR_ERR_OOM;
+    }
+
     if(meta->size == newsize) {
-        return 0;
+        return EVSTR_ERR_NONE;
     }
 
     void *buf = (void*)meta;
     void *tmp = realloc(buf, sizeof(struct evstring_meta) + newsize);
 
     if (!tmp) {
-        return 1;
+        return EVSTR_ERR_OOM;
     }
 
     if(buf != tmp) { // Reallocation caused memory to be moved
@@ -277,35 +305,36 @@ evstring_setsize(
     }
 
     meta->size = newsize;
-    return 0;
+    return EVSTR_ERR_NONE;
 }
 
-int
+evstring_error_t
 evstring_grow(
     evstring *s)
 {
     return evstring_setsize(s, evstring_getmeta(*s)->size * EVSTRING_GROWTH_FACTOR);
 }
 
-int
+evstring_error_t
 evstring_setlen(
     evstring *s,
     size_t newlen)
 {
     struct evstring_meta *meta = evstring_getmeta(*s);
     if(newlen == meta->length) {
-        return 0;
+        return EVSTR_ERR_NONE;
     }
 
     while(newlen > meta->size) {
-        if(evstring_grow(s)) {
-            return 1;
+        evstring_error_t grow_err = evstring_grow(s);
+        if(grow_err) {
+            return grow_err;
         }
         meta = evstring_getmeta(*s);
     }
     meta->length = newlen;
 
-    return 0;
+    return EVSTR_ERR_NONE;
 }
 
 void
@@ -329,7 +358,7 @@ evstring_cmp(
 }
 
 
-int
+evstring_error_t
 evstring_push(
     evstring *s,
     size_t sz,
@@ -339,8 +368,9 @@ evstring_push(
 
     // TODO Find a more efficient approach?
     while(meta->size <= sizeof(struct evstring_meta) + meta->length + sz) { // `<=` because of the null terminator
-        if(evstring_grow(s) != 0) {
-            return 1; // Failed
+        evstring_error_t grow_err = evstring_grow(s);
+        if(grow_err) {
+            return grow_err;
         }
         meta = evstring_getmeta(*s);
     }
@@ -349,7 +379,7 @@ evstring_push(
     meta->length += sz;
 
     (*s)[meta->length] = '\0';
-    return 0;
+    return EVSTR_ERR_NONE;
 }
 
 int
@@ -409,6 +439,7 @@ evstring_slice(
     size_t begin,
     size_t end)
 {
+    //TODO: Clamp begin and end
     return (evstr_ref) {
         .data = s,
         .offset = begin, 
